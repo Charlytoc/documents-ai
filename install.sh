@@ -45,46 +45,37 @@ install_pyenv_and_python() {
 
 install_docker() {
   if command -v docker &>/dev/null; then
-    echo "✅ Docker ya está instalado."
-    return
+    echo "✅ Docker ya instalado."; return
   fi
+  echo "🐳 Instalando Docker…"
 
-  # Detectar distro
-  . /etc/os-release
-  echo "🐳 Instalando Docker en $NAME..."
+  # 1) Amazon Linux
+  if command -v amazon-linux-extras &>/dev/null; then
+    sudo amazon-linux-extras install -y docker
 
-  if [[ "$ID" == "amzn" ]]; then
-    # Amazon Linux 2/2023
-    if command -v amazon-linux-extras &>/dev/null; then
-      sudo amazon-linux-extras install -y docker
-    else
-      sudo dnf install -y docker docker-compose-plugin
-    fi
-    sudo systemctl enable --now docker
+  # 2) Debian/Ubuntu
   elif command -v apt-get &>/dev/null; then
-    # Debian/Ubuntu
-    sudo apt-get update
-    sudo apt-get install -y ca-certificates curl gnupg lsb-release
-    curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg \
-      | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
-      https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
-      $(lsb_release -cs) stable" \
-      | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt-get update
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-    sudo systemctl enable --now docker
+    … # tu bloque apt-get
+
+  # 3) Fedora (dnf)
+  elif command -v dnf &>/dev/null; then
+    sudo dnf install -y docker
+
+  # 4) RHEL/CentOS (yum)
+  elif command -v yum &>/dev/null; then
+    … # tu bloque yum
+
   else
-    # CentOS/RHEL
-    sudo yum install -y yum-utils
-    sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-    sudo yum install -y docker-ce docker-ce-cli containerd.io
-    sudo systemctl enable --now docker
+    echo "⚠️ No se detectó gestor compatible (apt, dnf, yum)." >&2
+    exit 1
   fi
 
-  echo "✅ Docker instalado y en ejecución."
+  sudo systemctl enable --now docker
+  echo "✅ Docker listo."
 }
+
+
+
 install_ollama() {
   if command -v ollama &>/dev/null; then
     echo "✅ Ollama ya está instalado."
