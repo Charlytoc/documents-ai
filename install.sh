@@ -91,13 +91,38 @@ install_tesseract() {
     echo "✅ Tesseract ya está instalado."
     return
   fi
-  echo "🔍 Instalando Tesseract OCR..."
-  if [ "$PM" = "apt-get" ]; then
-    $SUDO apt-get update
-    $SUDO apt-get install -y tesseract-ocr tesseract-ocr-spa
+
+  echo "🔍 Instalando Tesseract OCR…"
+  # Detectar distro
+  . /etc/os-release
+
+  if [[ "$ID" == "amzn" ]]; then
+    # Amazon Linux 2 / 2023
+    echo "👉 Habilitando repositorio EPEL en Amazon Linux…"
+    if command -v amazon-linux-extras &>/dev/null; then
+      sudo amazon-linux-extras install -y epel
+    else
+      sudo dnf install -y epel-release
+    fi
+    echo "👉 Instalando Tesseract desde EPEL…"
+    sudo yum install -y tesseract tesseract-langpack-spa
+
+  elif command -v apt-get &>/dev/null; then
+    # Debian/Ubuntu
+    sudo apt-get update
+    sudo apt-get install -y tesseract-ocr tesseract-ocr-spa
+
+  elif command -v dnf &>/dev/null; then
+    # Fedora / RHEL8+ / CentOS8+
+    sudo dnf install -y epel-release
+    sudo dnf install -y tesseract tesseract-langpack-spa
+
   else
-    $SUDO yum install -y tesseract tesseract-langpack-spa
+    # Otros yum-based (CentOS7/RHEL7)
+    sudo yum install -y epel-release
+    sudo yum install -y tesseract tesseract-langpack-spa
   fi
+
   echo "✅ Tesseract instalado."
 }
 
