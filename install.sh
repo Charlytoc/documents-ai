@@ -48,28 +48,43 @@ install_docker() {
     echo "✅ Docker ya está instalado."
     return
   fi
-  echo "🐳 Instalando Docker..."
-  if [ "$PM" = "apt-get" ]; then
-    $SUDO apt-get update
-    $SUDO apt-get install -y ca-certificates curl gnupg lsb-release
+
+  # Detectar distro
+  . /etc/os-release
+  echo "🐳 Instalando Docker en $NAME..."
+
+  if [[ "$ID" == "amzn" ]]; then
+    # Amazon Linux 2/2023
+    if command -v amazon-linux-extras &>/dev/null; then
+      sudo amazon-linux-extras install -y docker
+    else
+      sudo dnf install -y docker docker-compose-plugin
+    fi
+    sudo systemctl enable --now docker
+  elif command -v apt-get &>/dev/null; then
+    # Debian/Ubuntu
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl gnupg lsb-release
     curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg \
-      | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
     echo \
       "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
-       https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
-       $(lsb_release -cs) stable" \
-      | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
-    $SUDO apt-get update
-    $SUDO apt-get install -y docker-ce docker-ce-cli containerd.io
+      https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
+      $(lsb_release -cs) stable" \
+      | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+    sudo systemctl enable --now docker
   else
-    $SUDO yum install -y yum-utils
-    $SUDO yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-    $SUDO yum install -y docker-ce docker-ce-cli containerd.io
+    # CentOS/RHEL
+    sudo yum install -y yum-utils
+    sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    sudo yum install -y docker-ce docker-ce-cli containerd.io
+    sudo systemctl enable --now docker
   fi
-  $SUDO systemctl enable --now docker
+
   echo "✅ Docker instalado y en ejecución."
 }
-
 install_ollama() {
   if command -v ollama &>/dev/null; then
     echo "✅ Ollama ya está instalado."
